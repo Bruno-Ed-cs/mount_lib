@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-DMOUNT_ARRAYS_IMPLEMENTATION -std=c11 -xc -xc-header]

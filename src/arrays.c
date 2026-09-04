@@ -71,8 +71,14 @@ bool mnt_array_iterate(Mnt_Array_Iterator* iter) {
     if (iter->index >= iter->head->lenght)
         return false;
 
-    iter->index++;
-    iter->data = &iter->head + sizeof(Mnt_Array_Header) + iter->head->data_size * iter->index;
+    if (iter->data == NULL) {
+        iter->data = &iter->head[1];
+
+    } else {
+
+        iter->index++;
+        iter->data = ((byte*)iter->head + sizeof(Mnt_Array_Header)) + (iter->head->data_size * iter->index);
+    }
 
     return true;
 

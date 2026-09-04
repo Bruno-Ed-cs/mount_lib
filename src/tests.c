@@ -1,9 +1,130 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <time.h>
+#include <assert.h>
+#include "arrays.h"
 
-int main() {
+bool create_array() {
 
-    printf("Hello tests\n");
+    float* temps = mnt_array_make(sizeof(float), 10);
+
+    if (temps == NULL)
+        return false;
+
+    for (size_t i = 0; i < mnt_array_len(temps); i++) {
+        if (temps[i] != 0) {
+
+            return false;
+        }
+    }
+
+    mnt_array_free(temps);
+
+    return true;
+}
+
+bool modify_array() {
+
+    float* temps = mnt_array_make(sizeof(float), 10);
+    float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
+
+    for (size_t i = 0; i < mnt_array_len(temps); i++) {
+        temps[i] = target_temps[i];
+    }
+
+    for (size_t i = 0; i < mnt_array_len(temps); i++) {
+        if (temps[i] != target_temps[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool clone_array() {
+    float* temps = mnt_array_make(sizeof(float), 10);
+    float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
+
+    for (size_t i = 0; i < mnt_array_len(temps); i++) {
+        temps[i] = target_temps[i];
+    }
+
+    float* temp_clone = mnt_array_clone(temps);
+
+    assert(mnt_array_len(temp_clone) == mnt_array_len(temps) && "The clone does not have the same length");
+
+    for (size_t i = 0; i < mnt_array_len(temp_clone); i++) {
+        if (temp_clone[i] != temps[i])
+            return false;
+    }
+
+    return true;
+}
+
+bool iterate_array() {
+
+    float* temps = mnt_array_make(sizeof(float), 10);
+    float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
+
+    for (size_t i = 0; i < mnt_array_len(temps); i++) {
+        temps[i] = target_temps[i];
+    }
+
+    Mnt_Array_Iterator it = mnt_array_get_iterator(temps);
+    printf("Array iterator output:\n\n");
+    printf("iterator index = %d\n", it.index);
+    while (mnt_array_iterate(&it)) {
+        printf("iterator index = %d\n", it.index);
+        float* temp = it.data;
+        printf("index: %f , data: %f\n", temps[it.index], *temp);
+
+        if (*temp != temps[it.index])
+            return false;
+
+    }
+
+    return true;
+
+}
+
+inline static char* passed(bool test_result) {
+    if (test_result)
+        return "PASSED";
+    else
+        return "FAILED";
+
+}
+
+int main(int argc, char** argv) {
+
+    char* log_path = "/tmp/mount_log.txt";
+
+    if (argc > 1) {
+
+        log_path = argv[1];
+    }
+
+    FILE* log = fopen(log_path, "a");
+    if (log == NULL) {
+        perror("Could not open the log file");
+        return 1;
+    }
+
+    time_t now = time(NULL);
+
+    fprintf(log, "\nTests Mount lib:\n%s\n"
+            "---------------------------------------------------------------------\n",
+            ctime(&now));
+
+    fprintf(log, "Create array test:\n\t%s\n", passed(create_array()));
+
+    fprintf(log, "Modify array test:\n\t%s\n", passed(modify_array()));
+
+    fprintf(log, "Clone array test:\n\t%s\n", passed(clone_array()));
+
+    fprintf(log, "Iterate array test:\n\t%s\n", passed(iterate_array()));
 
     return 0;
 
 }
+

@@ -13,8 +13,8 @@ typedef struct {
 
 typedef struct {
 
-    Mnt_Array_Header* head;
     int index;
+    Mnt_Array_Header* head;
     void* data;
 
 } Mnt_Array_Iterator;
@@ -30,8 +30,8 @@ void mnt_array_free(void* array);
 Mnt_Array_Iterator mnt_array_get_iterator(void* array);
 bool mnt_array_iterate(Mnt_Array_Iterator* iter);
 
-#define mnt_array_len(array) util_header_darray((array))->lenght
-#define mnt_array_data_size(array) util_header_darray((array))->data_size
+#define mnt_array_len(array) mnt_array_header((array))->lenght
+#define mnt_array_data_size(array) mnt_array_header((array))->data_size
 
 //H_MOUNT_ARRAYS
 #endif

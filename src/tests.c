@@ -2,7 +2,9 @@
 #include <stdbool.h>
 #include <time.h>
 #include <assert.h>
+#include <string.h>
 #include "arrays.h"
+#include "arenas.h"
 
 bool create_array() {
 
@@ -87,6 +89,38 @@ bool iterate_array() {
 
 }
 
+bool arena_creation() {
+    byte buffer[128];
+
+    Mnt_Arena stack_arena = mnt_static_arena_make(128, buffer);
+    Mnt_Arena heap_arena = mnt_static_arena_make(128, NULL);
+
+    int* num_heap = mnt_arena_alloc(sizeof(int), &heap_arena);
+    int* num_stack = mnt_arena_alloc(sizeof(int), &stack_arena);
+
+    mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
+    mnt_util_print_mem(stack_arena.static_arena.buffer, stack_arena.static_arena.size);
+
+    if (*num_heap != 0) {
+        printf("num 1 = %d\n", *num_heap);
+        return false;
+    }
+
+    if (*num_stack != 0) {
+        printf("num 2 = %d\n", *num_heap);
+        return false;
+    }
+
+    char* name = mnt_arena_alloc(6, &heap_arena);
+
+    mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
+    printf("%d num_heap\n", *num_heap);
+    printf("%s name\n", name);
+
+    mnt_static_arena_delete(heap_arena.static_arena);
+    return true;
+}
+
 inline static char* passed(bool test_result) {
     if (test_result)
         return "PASSED";
@@ -123,6 +157,8 @@ int main(int argc, char** argv) {
     fprintf(log, "Clone array test:\n\t%s\n", passed(clone_array()));
 
     fprintf(log, "Iterate array test:\n\t%s\n", passed(iterate_array()));
+
+    fprintf(log, "Create arena test:\n\t%s\n", passed(arena_creation()));
 
     return 0;
 

@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include "arenas.h"
+#include "utilities.h"
 
 typedef struct {
 
@@ -18,8 +20,6 @@ typedef struct {
     void* data;
 
 } Mnt_Array_Iterator;
-
-typedef char byte;
 
 Mnt_Array_Header* mnt_array_header(void* array);
 void* mnt_array_make_canonical(size_t data_size, size_t n);

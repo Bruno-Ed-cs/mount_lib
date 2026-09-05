@@ -89,7 +89,7 @@ bool iterate_array() {
 
 }
 
-bool arena_creation() {
+bool static_arena_tests() {
     byte buffer[128];
 
     Mnt_Arena stack_arena = mnt_static_arena_make(128, buffer);
@@ -111,7 +111,7 @@ bool arena_creation() {
         return false;
     }
 
-    char* name = mnt_arena_alloc(6, &heap_arena);
+    char* name = mnt_arena_alloc(22, &heap_arena);
     memcpy(name, "Bruno", 6);
 
     mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
@@ -134,6 +134,22 @@ bool arena_creation() {
         return false;
     }
 
+    char* full_name = mnt_arena_realloc(name, 32, &heap_arena);
+    int* ids = mnt_arena_alloc(2, &heap_arena);
+
+    ids[0] = 1; ids[1] = 0xFF;
+
+    printf("Ids = %d, %d\n", ids[0], ids[1]);
+    printf("realloc name: %s\n", full_name);
+
+    if (ids[0] != 1 || ids[1] != 0xFF)
+        return false;
+    full_name = mnt_arena_realloc(name, 32, &heap_arena);
+    full_name = mnt_arena_realloc(name, 32, &heap_arena);
+    full_name = mnt_arena_realloc(name, 32, &heap_arena);
+    full_name = mnt_arena_realloc(name, 32, &heap_arena);
+
+    mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
 
     mnt_arena_delete(heap_arena);
     return true;
@@ -176,7 +192,7 @@ int main(int argc, char** argv) {
 
     fprintf(log, "Iterate array test:\n\t%s\n", passed(iterate_array()));
 
-    fprintf(log, "Create arena test:\n\t%s\n", passed(arena_creation()));
+    fprintf(log, "Create arena test:\n\t%s\n", passed(static_arena_tests()));
 
     return 0;
 

@@ -25,7 +25,6 @@ inline static bool mnt_validate_header(Mnt_Allocation_Header head) {
 
 typedef struct {
 
-    size_t end;
     size_t cur_entry;
 
     struct {
@@ -36,7 +35,7 @@ typedef struct {
 } Mnt_Free_List;
 
 void  mnt_free_list_add(Mnt_Free_List* self, byte* pos, size_t size);
-byte* mnt_free_list_get_next(Mnt_Free_List* self, size_t size);
+byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size);
 
 void  mnt_free_list_remove(Mnt_Free_List* self, size_t index);
 void  mnt_free_list_reset(Mnt_Free_List* self);

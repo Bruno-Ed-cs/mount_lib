@@ -65,8 +65,21 @@ Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer) {
     };
 }
 
-void mnt_static_arena_delete(Mnt_Static_Arena arena) {
-    free(arena.buffer);
+void mnt_arena_delete(Mnt_Arena arena) {
+
+    switch (arena.type) {
+        case MNT_PAGED_ARENA:
+            //TODO: Implement the paged arena
+
+        break;
+
+        case MNT_STATIC_ARENA:
+
+            free(arena.static_arena.buffer);
+
+        break;
+
+    }
 }
 
 void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {

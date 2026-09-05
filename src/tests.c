@@ -112,12 +112,18 @@ bool arena_creation() {
     }
 
     char* name = mnt_arena_alloc(6, &heap_arena);
+    memcpy(name, "Bruno", 6);
 
     mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
     printf("%d num_heap\n", *num_heap);
     printf("%s name\n", name);
 
-    mnt_static_arena_delete(heap_arena.static_arena);
+    if (strcmp(name, "Bruno") != 0) {
+        return false;
+    }
+
+    mnt_arena_delete(heap_arena);
+    mnt_arena_delete(stack_arena);
     return true;
 }
 

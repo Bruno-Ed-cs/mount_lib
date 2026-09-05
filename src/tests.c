@@ -122,8 +122,20 @@ bool arena_creation() {
         return false;
     }
 
+    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)(name - sizeof(Mnt_Allocation_Header));
+    Mnt_Allocation_Header* false_head = (Mnt_Allocation_Header*)(name);
+    if (!mnt_validate_header(*head)){
+        printf("The header is invalid\n");
+        return false;
+    }
+
+    if (mnt_validate_header(*false_head)) {
+        printf("The false head is valid\n");
+        return false;
+    }
+
+
     mnt_arena_delete(heap_arena);
-    mnt_arena_delete(stack_arena);
     return true;
 }
 

@@ -1,5 +1,27 @@
 #include "arenas.h"
 #include <stdio.h>
+#include <stdint.h>
+
+void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena) {
+
+    void* allocated = NULL;
+
+    switch (arena->type) {
+        case MNT_PAGED_ARENA:
+            //TODO: Implement the paged arena
+
+        break;
+
+        case MNT_STATIC_ARENA:
+
+            allocated = mnt_static_arena_realloc(mem_begin, new_size, &arena->static_arena);
+
+        break;
+
+    }
+
+    return allocated;
+}
 
 void* mnt_arena_alloc(size_t size, Mnt_Arena* arena) {
 
@@ -83,16 +105,20 @@ void mnt_arena_delete(Mnt_Arena arena) {
 }
 
 void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
+    size_t true_size = size + sizeof(Mnt_Allocation_Header);
 
-    if ((arena->pos + size) >= (arena->buffer + arena->size)) {
+    if ((arena->pos + true_size) >= (arena->buffer + arena->size)) {
         fprintf(stderr, "The current arena cannot allocate %lu bytes, only %lu remain\n", 
                 size,
                 arena->pos - arena->buffer);
         return NULL;
     }
 
-    byte* allocated = arena->pos;
-    arena->pos += size;
+    byte* allocated = arena->pos + sizeof(Mnt_Allocation_Header);
+    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)arena->pos;
+    head->size = size;
+    head->check = MNT_ALLOC_KEY ^ size;
+    arena->pos += true_size;
     return allocated;
 }
 
@@ -102,5 +128,26 @@ int mnt_static_arena_reset(Mnt_Static_Arena* arena) {
     arena->pos = arena->buffer;
 
     return delta;
+}
+
+void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Arena* arena) {
+
+}
+
+void  mnt_free_list_add(Mnt_Free_List* self, byte* pos, size_t size) {
+
+}
+
+byte* mnt_free_list_get_next(Mnt_Free_List* self, size_t size) {
+
+}
+
+
+void  mnt_free_list_remove(Mnt_Free_List* self, size_t index) {
+
+}
+
+void  mnt_free_list_reset(Mnt_Free_List* self) {
+
 }
 

@@ -81,6 +81,8 @@ Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer) {
     arena.pos = arena.buffer;
     arena.size = size;
 
+    mnt_free_list_reset(&arena.reallocations);
+
     return (Mnt_Arena) {
         .static_arena = arena,
         .type = MNT_STATIC_ARENA
@@ -136,18 +138,65 @@ void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Aren
 
 void  mnt_free_list_add(Mnt_Free_List* self, byte* pos, size_t size) {
 
+    if (self->cur_entry == self->end) {
+        self->list[self->cur_entry].pos = pos;
+        self->list[self->cur_entry].size = size;
+
+        return;
+    }
+
+    self->cur_entry++;
+    self->list[self->cur_entry].pos = pos;
+    self->list[self->cur_entry].size = size;
+
+    return;
 }
 
-byte* mnt_free_list_get_next(Mnt_Free_List* self, size_t size) {
+byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size) {
 
+    byte* result = NULL;
+    size_t i_result = 0;
+
+    for (size_t i = 0; i <= self->end; i++) {
+        if (self->list[i].size >= size) {
+            i_result = i;
+            result = self->list[i].pos;
+            break;
+        }
+
+    }
+
+    if (result != NULL) {
+
+        if (self->list[i_result].size == size) {
+            mnt_free_list_remove(self, i_result);
+        } else {
+            self->list[i_result].pos += size;
+            self->list[i_result].size -= size;
+        }
+
+    }
+
+    return result;
 }
-
 
 void  mnt_free_list_remove(Mnt_Free_List* self, size_t index) {
 
+    for (size_t i = index; i < self->end; i++) {
+        self->list[i] = self->list[i + 1];
+    }
+
+    self->end = self->end == 0 ? 0 : self->end--;
+    self->cur_entry = self->cur_entry == 0 ? 0 : self->cur_entry--;
 }
 
 void  mnt_free_list_reset(Mnt_Free_List* self) {
 
+    for (size_t i = 0; i < MNT_MAX_FREE_LIST; i++) {
+        self->list[i].size = 0;
+        self->list[i].pos = NULL;
+    }
+    self->end = 0;
+    self->cur_entry = 0;
 }
 

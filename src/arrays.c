@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void* mnt_array_make(size_t data_size, size_t n) {
+void* mnt_array_make_canonical(size_t data_size, size_t n) {
 
     Mnt_Array_Header header = {
         .lenght = n,
@@ -38,7 +38,7 @@ void* mnt_array_realloc(void* array, size_t new_size) {
 void* mnt_array_clone(void* array) {
 
     Mnt_Array_Header* header = mnt_array_header(array);
-    void* new_array = mnt_array_make(header->data_size, header->lenght);
+    void* new_array = mnt_array_make_canonical(header->data_size, header->lenght);
 
     size_t size = header->data_size * header->lenght + sizeof(Mnt_Array_Header);
 

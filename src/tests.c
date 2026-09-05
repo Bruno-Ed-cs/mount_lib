@@ -6,7 +6,7 @@
 
 bool create_array() {
 
-    float* temps = mnt_array_make(sizeof(float), 10);
+    float* temps = mnt_array_make(float, 10);
 
     if (temps == NULL)
         return false;
@@ -25,7 +25,7 @@ bool create_array() {
 
 bool modify_array() {
 
-    float* temps = mnt_array_make(sizeof(float), 10);
+    float* temps = mnt_array_make(float, 10);
     float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
 
     for (size_t i = 0; i < mnt_array_len(temps); i++) {
@@ -42,7 +42,7 @@ bool modify_array() {
 }
 
 bool clone_array() {
-    float* temps = mnt_array_make(sizeof(float), 10);
+    float* temps = mnt_array_make(float, 10);
     float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
 
     for (size_t i = 0; i < mnt_array_len(temps); i++) {
@@ -63,7 +63,7 @@ bool clone_array() {
 
 bool iterate_array() {
 
-    float* temps = mnt_array_make(sizeof(float), 10);
+    float* temps = mnt_array_make(float, 10);
     float target_temps[] = {29.3, 11, 43, 29, 69, 100, 385.2, 10, 88, 2};
 
     for (size_t i = 0; i < mnt_array_len(temps); i++) {

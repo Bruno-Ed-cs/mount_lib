@@ -3,14 +3,14 @@
 
 #include <stdio.h>
 
-typedef char byte;
+typedef unsigned char byte;
 
 inline static void mnt_util_print_mem(byte* begin, unsigned long size) {
 
     printf("Memory block at Ox%08X of length: %lu:\n", begin, size);
     puts("--------------------------------------------------------------------------");
     for (size_t i = 0; i < size; i++) {
-        if (i % 16 == 0) {
+        if (i % 10 == 0) {
             puts("\n");
         }
 

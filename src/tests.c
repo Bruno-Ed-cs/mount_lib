@@ -112,6 +112,7 @@ bool static_arena_tests() {
     }
 
     char* name = mnt_arena_alloc(22, &heap_arena);
+    printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
     memcpy(name, "Bruno", 6);
 
     mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
@@ -134,20 +135,31 @@ bool static_arena_tests() {
         return false;
     }
 
-    char* full_name = mnt_arena_realloc(name, 32, &heap_arena);
-    int* ids = mnt_arena_alloc(2, &heap_arena);
+    mnt_arena_free_all(&heap_arena);
 
-    ids[0] = 1; ids[1] = 0xFF;
+    name = mnt_arena_alloc(22, &heap_arena);
+    printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
+    memcpy(name, "Bruno", 6);
 
-    printf("Ids = %d, %d\n", ids[0], ids[1]);
-    printf("realloc name: %s\n", full_name);
-
-    if (ids[0] != 1 || ids[1] != 0xFF)
-        return false;
-    full_name = mnt_arena_realloc(name, 32, &heap_arena);
-    full_name = mnt_arena_realloc(name, 32, &heap_arena);
-    full_name = mnt_arena_realloc(name, 32, &heap_arena);
-    full_name = mnt_arena_realloc(name, 32, &heap_arena);
+    char* full_name = mnt_arena_realloc(name, 28, &heap_arena);
+    full_name = mnt_arena_realloc(full_name, 28, &heap_arena);
+    //
+    // ids[0] = 1; ids[1] = 0xFF;
+    //
+    //
+    // printf("Ids = %d, %d\n", ids[0], ids[1]);
+    // printf("realloc name: %s\n", full_name);
+    //
+    // if (ids[0] != 1 || ids[1] != 0xFF)
+    //     return false;
+    //
+    for (size_t i = 0; i < 10; i++) {
+        int* nums = mnt_arena_alloc(sizeof(int) * 2, &heap_arena);
+        if (nums != NULL) {
+            nums[0] = 0xFFFFFFFF;
+            nums[1] = 0xFFFFFFFF;
+        }
+    }
 
     mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
 

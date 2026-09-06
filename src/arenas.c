@@ -111,29 +111,38 @@ void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
     size_t true_size = size + sizeof(Mnt_Allocation_Header);
 
     byte* result = mnt_free_list_get_best_fit(&arena->reallocations, true_size);
-    printf("Result: %d\n", result);
+    // printf("Result: %d\n", result);
 
     if (result != NULL) {
 
-        byte* allocated = result + sizeof(Mnt_Allocation_Header);
+        mnt_free_list_update(&arena->reallocations, result, true_size);
+
         Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)result;
         head->size = size;
         head->check = MNT_ALLOC_KEY ^ size;
+
+        byte* allocated = result + sizeof(Mnt_Allocation_Header);
+
         return allocated;
     }
 
     if ((arena->pos + true_size) >= (arena->buffer + arena->size)) {
         fprintf(stderr, "The current arena cannot allocate %lu bytes, only %lu remain\n", 
                 true_size,
-                arena->pos - arena->buffer);
+                (arena->buffer + arena->size) - arena->pos);
         return NULL;
     }
 
-    byte* allocated = arena->pos + sizeof(Mnt_Allocation_Header);
     Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)arena->pos;
     head->size = size;
     head->check = MNT_ALLOC_KEY ^ size;
+
+    byte* allocated = arena->pos + sizeof(Mnt_Allocation_Header);
+
+    printf("Allocation head.size = %lu\n", mnt_get_header(allocated).size);
+
     arena->pos += true_size;
+
     return allocated;
 }
 
@@ -149,53 +158,81 @@ int mnt_static_arena_reset(Mnt_Static_Arena* arena) {
 void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Arena* arena) {
 
     if ((byte*)mem_begin <= arena->buffer || (byte*)mem_begin >= arena->buffer + arena->size) {
-        fprintf(stderr, "Error, invalid realocation: Pointer outside arenas domain\n");
+        fprintf(stderr, "Error, invalid realocation: Pointer outside arenas domain: Ox%04X\n", mem_begin);
         return NULL;
     }
 
-    Mnt_Allocation_Header* head = mem_begin - sizeof(Mnt_Allocation_Header);
+    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)((byte*)mem_begin - sizeof(Mnt_Allocation_Header));
 
-    if ((byte*)head <= arena->buffer || (byte*)head >= arena->buffer + arena->size) {
+    if ((byte*)head < arena->buffer || (byte*)head >= arena->buffer + arena->size) {
         fprintf(stderr, "Error, invalid realocation: Pointer does not belong to a alocation\n");
         return NULL;
     }
 
-    bool valid = mnt_validate_header(*head);
+    if (mnt_validate_header(*head) == false) {
+        fprintf(stderr, "Error, invalid header\n");
+        return NULL;
+
+    }
+    printf("Rellocation head.size = %lu\n", mnt_get_header(mem_begin).size);
+    printf("Rellocation head->size = %lu\n", head->size);
+
     size_t full_size = new_size + sizeof(Mnt_Allocation_Header);
 
     byte* pos = mnt_free_list_get_best_fit(&arena->reallocations, full_size);
 
-    mnt_free_list_add(&arena->reallocations, (byte*)head, head->size);
-
     if (pos == NULL) {
         pos = mnt_static_arena_alloc(new_size, arena);
+
+        if (pos != NULL) {
+            mnt_free_list_add(&arena->reallocations, (byte*)head, head->size + sizeof(Mnt_Allocation_Header));
+            memcpy(pos, mem_begin, head->size);
+            memset(head, 0, head->size + sizeof(Mnt_Allocation_Header));
+        }
+
+
     } else {
+
+        mnt_free_list_update(&arena->reallocations, pos, full_size);
+
         Mnt_Allocation_Header* new_header = (Mnt_Allocation_Header*)(pos);
         new_header->size = new_size;
         new_header->check = new_size ^ MNT_ALLOC_KEY;
-        pos = (byte*)&new_header[1];
+        pos += sizeof(*new_header);
+
+        memcpy(pos, mem_begin, head->size);
+        memset(head, 0, head->size + sizeof(Mnt_Allocation_Header));
     }
-
-
-    memcpy(pos, mem_begin, head->size);
 
     return pos;
 
 }
 
+void mnt_free_list_update(Mnt_Free_List* self, byte* target, size_t full_size) {
+
+    for (int i = 0; i < self->end; i++) {
+        if (target == self->list[i].pos) {
+            self->list[i].pos += full_size;
+            self->list[i].size -= full_size;
+            if (self->list[i].size <= 0)
+                mnt_free_list_remove(self, i);
+
+            break;
+        }
+    }
+
+}
+
 void  mnt_free_list_add(Mnt_Free_List* self, byte* pos, size_t size) {
 
-    if (self->cur_entry == MNT_MAX_FREE_LIST) {
-        self->list[self->cur_entry -1].pos = pos;
-        self->list[self->cur_entry -1].size = size;
-
+    if (self->end >= MNT_MAX_FREE_LIST) {
         return;
     }
 
-    self->list[self->cur_entry].pos = pos;
-    self->list[self->cur_entry].size = size;
+    self->list[self->end].pos = pos;
+    self->list[self->end].size = size;
 
-    self->cur_entry++;
+    self->end = self->end >= MNT_MAX_FREE_LIST ? MNT_MAX_FREE_LIST -1 : self->end + 1;
 
     return;
 }
@@ -205,23 +242,12 @@ byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size) {
     byte* result = NULL;
     size_t i_result = 0;
 
-    for (size_t i = 0; i < MNT_MAX_FREE_LIST; i++) {
-        if (self->list[i].size <= size) {
-            printf("freelist[%d] = %d\n", i, self->list[i].size);
+    for (size_t i = 0; i < self->end; i++) {
+        printf("freelist[%d] = %d, %X\n", i, self->list[i].size, self->list[i].pos);
+        if (self->list[i].size >= size) {
             i_result = i;
             result = self->list[i].pos;
             break;
-        }
-
-    }
-
-    if (result != NULL) {
-
-        if (self->list[i_result].size == size) {
-            mnt_free_list_remove(self, i_result);
-        } else {
-            self->list[i_result].pos += size;
-            self->list[i_result].size -= size;
         }
 
     }
@@ -231,11 +257,11 @@ byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size) {
 
 void  mnt_free_list_remove(Mnt_Free_List* self, size_t index) {
 
-    for (size_t i = index; i < MNT_MAX_FREE_LIST; i++) {
+    for (size_t i = index; i < self->end - 1; i++) {
         self->list[i] = self->list[i + 1];
     }
+    self->end--;
 
-    self->cur_entry = self->cur_entry == 0 ? 0 : self->cur_entry--;
 }
 
 void  mnt_free_list_reset(Mnt_Free_List* self) {
@@ -244,6 +270,6 @@ void  mnt_free_list_reset(Mnt_Free_List* self) {
         self->list[i].size = 0;
         self->list[i].pos = NULL;
     }
-    self->cur_entry = 0;
+    self->end = 0;
 }
 

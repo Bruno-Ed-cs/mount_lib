@@ -23,9 +23,15 @@ inline static bool mnt_validate_header(Mnt_Allocation_Header head) {
 
 }
 
+inline static Mnt_Allocation_Header mnt_get_header(void* ptr) {
+    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)((byte*)ptr - sizeof(Mnt_Allocation_Header));
+
+    return *head;
+}
+
 typedef struct {
 
-    size_t cur_entry;
+    size_t end;
 
     struct {
         byte* pos;
@@ -39,6 +45,7 @@ byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size);
 
 void  mnt_free_list_remove(Mnt_Free_List* self, size_t index);
 void  mnt_free_list_reset(Mnt_Free_List* self);
+void mnt_free_list_update(Mnt_Free_List* self, byte* target, size_t full_size);
 
 typedef struct {
     byte* buffer;
@@ -75,6 +82,7 @@ int mnt_static_arena_reset(Mnt_Static_Arena* arena);
 void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Arena* arena);
 
 void mnt_arena_delete(Mnt_Arena arena);
+int mnt_arena_free_all(Mnt_Arena* arena);
 void* mnt_arena_alloc(size_t size, Mnt_Arena* arena);
 void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena);
 int mnt_arena_free(void* mem_block, Mnt_Arena* arena);

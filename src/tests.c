@@ -112,6 +112,10 @@ bool static_arena_tests() {
     }
 
     char* name = mnt_arena_alloc(22, &heap_arena);
+    if ((uintptr_t)name != mnt_resolve_alingment((uintptr_t)name)){
+        fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+        return 1;
+    }
     printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
     memcpy(name, "Bruno", 6);
 
@@ -138,6 +142,10 @@ bool static_arena_tests() {
     mnt_arena_free_all(&heap_arena);
 
     name = mnt_arena_alloc(22, &heap_arena);
+    if ((uintptr_t)name != mnt_resolve_alingment((uintptr_t)name)){
+        fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+        return 1;
+    }
     printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
     memcpy(name, "Bruno", 6);
 
@@ -155,6 +163,11 @@ bool static_arena_tests() {
     //
     for (size_t i = 0; i < 10; i++) {
         int* nums = mnt_arena_alloc(sizeof(int) * 2, &heap_arena);
+        if ((uintptr_t)nums != mnt_resolve_alingment((uintptr_t)nums)){
+            fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+            return 1;
+        }
+
         if (nums != NULL) {
             nums[0] = 0xFFFFFFFF;
             nums[1] = 0xFFFFFFFF;

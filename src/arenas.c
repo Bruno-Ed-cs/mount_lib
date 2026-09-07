@@ -107,41 +107,53 @@ void mnt_arena_delete(Mnt_Arena arena) {
     }
 }
 
+
 void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
     size_t true_size = size + sizeof(Mnt_Allocation_Header);
+
+    //Verify current alingment
+    
+
+    //Verify if it all fits
 
     byte* result = mnt_free_list_get_best_fit(&arena->reallocations, true_size);
     // printf("Result: %d\n", result);
 
     if (result != NULL) {
 
-        mnt_free_list_update(&arena->reallocations, result, true_size);
+        byte* aling_result = (byte*)mnt_resolve_alingment((uintptr_t)result);
 
-        Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)result;
-        head->size = size;
-        head->check = MNT_ALLOC_KEY ^ size;
+        if ((size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->reallocations, result)) {
+            mnt_free_list_update(&arena->reallocations, result, true_size + (result - aling_result));
 
-        byte* allocated = result + sizeof(Mnt_Allocation_Header);
+            Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)result;
+            head->size = size;
+            head->check = MNT_ALLOC_KEY ^ size;
 
-        return allocated;
+            byte* allocated = result + sizeof(Mnt_Allocation_Header);
+
+            return allocated;
+        }
     }
 
-    if ((arena->pos + true_size) >= (arena->buffer + arena->size)) {
-        fprintf(stderr, "The current arena cannot allocate %lu bytes, only %lu remain\n", 
+    uintptr_t ptr = mnt_resolve_alingment((uintptr_t)arena->pos);
+    if ((ptr + true_size) >= (uintptr_t)(arena->buffer + arena->size)) {
+        fprintf(stderr, "The current arena cannot allocate %lu bytes from adress %08X, only %lu remain\n", 
                 true_size,
+                ptr,
                 (arena->buffer + arena->size) - arena->pos);
         return NULL;
     }
 
-    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)arena->pos;
+    Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)ptr;
     head->size = size;
     head->check = MNT_ALLOC_KEY ^ size;
 
-    byte* allocated = arena->pos + sizeof(Mnt_Allocation_Header);
+    byte* allocated = (byte*)(ptr + sizeof(Mnt_Allocation_Header));
 
     printf("Allocation head.size = %lu\n", mnt_get_header(allocated).size);
 
-    arena->pos += true_size;
+    arena->pos = (byte*)(ptr + true_size);
 
     return allocated;
 }
@@ -177,9 +189,23 @@ void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Aren
     printf("Rellocation head.size = %lu\n", mnt_get_header(mem_begin).size);
     printf("Rellocation head->size = %lu\n", head->size);
 
-    size_t full_size = new_size + sizeof(Mnt_Allocation_Header);
+    size_t true_size = new_size + sizeof(Mnt_Allocation_Header);
 
-    byte* pos = mnt_free_list_get_best_fit(&arena->reallocations, full_size);
+    byte* pos = mnt_free_list_get_best_fit(&arena->reallocations, true_size);
+    uintptr_t aling_result = mnt_resolve_alingment((uintptr_t)pos);
+
+    if (pos != NULL && (size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->reallocations, pos)) {
+
+        mnt_free_list_update(&arena->reallocations, pos, true_size + ((uintptr_t) pos - aling_result));
+
+        Mnt_Allocation_Header* new_header = (Mnt_Allocation_Header*)(aling_result);
+        new_header->size = new_size;
+        new_header->check = new_size ^ MNT_ALLOC_KEY;
+        pos = (byte*)aling_result + sizeof(*new_header);
+
+        memcpy(pos, mem_begin, head->size);
+        memset(head, 0, head->size + sizeof(Mnt_Allocation_Header));
+    }
 
     if (pos == NULL) {
         pos = mnt_static_arena_alloc(new_size, arena);
@@ -191,20 +217,25 @@ void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Aren
         }
 
 
-    } else {
-
-        mnt_free_list_update(&arena->reallocations, pos, full_size);
-
-        Mnt_Allocation_Header* new_header = (Mnt_Allocation_Header*)(pos);
-        new_header->size = new_size;
-        new_header->check = new_size ^ MNT_ALLOC_KEY;
-        pos += sizeof(*new_header);
-
-        memcpy(pos, mem_begin, head->size);
-        memset(head, 0, head->size + sizeof(Mnt_Allocation_Header));
     }
 
+
     return pos;
+
+}
+
+
+size_t mnt_free_list_find(Mnt_Free_List* self, byte* target) {
+
+    for (int i = 0; i < self->end; i++) {
+        if (target == self->list[i].pos) {
+            return self->list[i].size;
+
+            break;
+        }
+    }
+
+    return 0;
 
 }
 
@@ -214,7 +245,7 @@ void mnt_free_list_update(Mnt_Free_List* self, byte* target, size_t full_size) {
         if (target == self->list[i].pos) {
             self->list[i].pos += full_size;
             self->list[i].size -= full_size;
-            if (self->list[i].size <= 0)
+            if (self->list[i].size <= 0 || self->list[i].size <= sizeof(Mnt_Allocation_Header))
                 mnt_free_list_remove(self, i);
 
             break;

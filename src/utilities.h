@@ -2,6 +2,7 @@
 #define H_MOUNT_UTILITIES
 
 #include <stdio.h>
+#include <stdint.h>
 
 typedef unsigned char byte;
 
@@ -20,6 +21,23 @@ inline static void mnt_util_print_mem(byte* begin, unsigned long size) {
     puts("--------------------------------------------------------------------------\n");
 
 };
+
+inline static uintptr_t mnt_resolve_alingment(uintptr_t ptr) {
+
+
+    const uintptr_t aling = 2 * sizeof(void*);
+    uintptr_t chunk_alingment = ptr % aling;
+
+    if (chunk_alingment != 0) {
+        ptr = (ptr / aling + 1) * aling;
+    }
+
+    return ptr;
+
+    //Get the next align adress
+
+
+}
 
 
 //H_MOUNT_UTILITIES

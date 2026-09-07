@@ -40,6 +40,7 @@ typedef struct {
 
 } Mnt_Free_List;
 
+size_t mnt_free_list_find(Mnt_Free_List* self, byte* target);
 void  mnt_free_list_add(Mnt_Free_List* self, byte* pos, size_t size);
 byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size);
 

@@ -3,8 +3,9 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
-#include "arrays.h"
-#include "arenas.h"
+#include "../arrays.h"
+#include "../arenas.h"
+#include "../logging.h"
 
 bool create_array() {
 
@@ -73,12 +74,12 @@ bool iterate_array() {
     }
 
     Mnt_Array_Iterator it = mnt_array_get_iterator(temps);
-    printf("Array iterator output:\n\n");
-    printf("iterator index = %d\n", it.index);
+    mnt_log(MNT_INFO, "Array iterator output:\n\n");
+    mnt_log(MNT_INFO, "iterator index = %d\n", it.index);
     while (mnt_array_iterate(&it)) {
-        printf("iterator index = %d\n", it.index);
+        mnt_log(MNT_INFO, "iterator index = %d\n", it.index);
         float* temp = it.data;
-        printf("index: %f , data: %f\n", temps[it.index], *temp);
+        mnt_log(MNT_INFO, "index: %f , data: %f\n", temps[it.index], *temp);
 
         if (*temp != temps[it.index])
             return false;
@@ -102,26 +103,28 @@ bool static_arena_tests() {
     mnt_util_print_mem(stack_arena.static_arena.buffer, stack_arena.static_arena.size);
 
     if (*num_heap != 0) {
-        printf("num 1 = %d\n", *num_heap);
+        mnt_log(MNT_INFO, "num 1 = %d\n", *num_heap);
+        mnt_log(MNT_INFO, "num 1 = %d\n", *num_heap);
         return false;
     }
 
     if (*num_stack != 0) {
-        printf("num 2 = %d\n", *num_heap);
+        mnt_log(MNT_INFO, "num 2 = %d\n", *num_heap);
+        mnt_log(MNT_INFO, "num 2 = %d\n", *num_stack);
         return false;
     }
 
     char* name = mnt_arena_alloc(22, &heap_arena);
     if ((uintptr_t)name != mnt_resolve_alingment((uintptr_t)name)){
-        fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+        mnt_log(MNT_ERROR, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
         return 1;
     }
-    printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
+    mnt_log(MNT_INFO, "name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
     memcpy(name, "Bruno", 6);
 
     mnt_util_print_mem(heap_arena.static_arena.buffer, heap_arena.static_arena.size);
-    printf("%d num_heap\n", *num_heap);
-    printf("%s name\n", name);
+    mnt_log(MNT_INFO, "%d num_heap\n", *num_heap);
+    mnt_log(MNT_INFO, "%s name\n", name);
 
     if (strcmp(name, "Bruno") != 0) {
         return false;
@@ -130,12 +133,12 @@ bool static_arena_tests() {
     Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)(name - sizeof(Mnt_Allocation_Header));
     Mnt_Allocation_Header* false_head = (Mnt_Allocation_Header*)(name);
     if (!mnt_validate_header(*head)){
-        printf("The header is invalid\n");
+        mnt_log(MNT_INFO, "The header is invalid\n");
         return false;
     }
 
     if (mnt_validate_header(*false_head)) {
-        printf("The false head is valid\n");
+        mnt_log(MNT_INFO, "The false head is valid\n");
         return false;
     }
 
@@ -143,10 +146,10 @@ bool static_arena_tests() {
 
     name = mnt_arena_alloc(22, &heap_arena);
     if ((uintptr_t)name != mnt_resolve_alingment((uintptr_t)name)){
-        fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+        mnt_log(MNT_ERROR, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
         return 1;
     }
-    printf("name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
+    mnt_log(MNT_INFO, "name header {\nsize = %lu\n}\n", mnt_get_header(name).size);
     memcpy(name, "Bruno", 6);
 
     char* full_name = mnt_arena_realloc(name, 28, &heap_arena);
@@ -164,7 +167,7 @@ bool static_arena_tests() {
     for (size_t i = 0; i < 10; i++) {
         int* nums = mnt_arena_alloc(sizeof(int) * 2, &heap_arena);
         if ((uintptr_t)nums != mnt_resolve_alingment((uintptr_t)nums)){
-            fprintf(stderr, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
+            mnt_log(MNT_ERROR, "Memory not alingned " __FILE__ ": %d\n", __LINE__);
             return 1;
         }
 

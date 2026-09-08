@@ -1,4 +1,5 @@
 #include "arenas.h"
+#include "logging.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -138,7 +139,7 @@ void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
 
     uintptr_t ptr = mnt_resolve_alingment((uintptr_t)arena->pos);
     if ((ptr + true_size) >= (uintptr_t)(arena->buffer + arena->size)) {
-        fprintf(stderr, "The current arena cannot allocate %lu bytes from adress %08X, only %lu remain\n", 
+        mnt_log(MNT_ERROR, "The current arena cannot allocate %lu bytes from adress %08X, only %lu remain\n", 
                 true_size,
                 ptr,
                 (arena->buffer + arena->size) - arena->pos);
@@ -151,7 +152,7 @@ void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
 
     byte* allocated = (byte*)(ptr + sizeof(Mnt_Allocation_Header));
 
-    printf("Allocation head.size = %lu\n", mnt_get_header(allocated).size);
+    mnt_log(MNT_DEBUG, "Allocation head.size = %lu\n", mnt_get_header(allocated).size);
 
     arena->pos = (byte*)(ptr + true_size);
 
@@ -170,24 +171,24 @@ int mnt_static_arena_reset(Mnt_Static_Arena* arena) {
 void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Arena* arena) {
 
     if ((byte*)mem_begin <= arena->buffer || (byte*)mem_begin >= arena->buffer + arena->size) {
-        fprintf(stderr, "Error, invalid realocation: Pointer outside arenas domain: Ox%04X\n", mem_begin);
+        mnt_log(MNT_ERROR, "Error, invalid realocation: Pointer outside arenas domain: Ox%04X\n", mem_begin);
         return NULL;
     }
 
     Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)((byte*)mem_begin - sizeof(Mnt_Allocation_Header));
 
     if ((byte*)head < arena->buffer || (byte*)head >= arena->buffer + arena->size) {
-        fprintf(stderr, "Error, invalid realocation: Pointer does not belong to a alocation\n");
+        mnt_log(MNT_ERROR, "Error, invalid realocation: Pointer does not belong to a alocation\n");
         return NULL;
     }
 
     if (mnt_validate_header(*head) == false) {
-        fprintf(stderr, "Error, invalid header\n");
+        mnt_log(MNT_ERROR, "Error, invalid header\n");
         return NULL;
 
     }
-    printf("Rellocation head.size = %lu\n", mnt_get_header(mem_begin).size);
-    printf("Rellocation head->size = %lu\n", head->size);
+    mnt_log(MNT_DEBUG, "Rellocation head.size = %lu\n", mnt_get_header(mem_begin).size);
+    mnt_log(MNT_DEBUG, "Rellocation head->size = %lu\n", head->size);
 
     size_t true_size = new_size + sizeof(Mnt_Allocation_Header);
 
@@ -274,7 +275,7 @@ byte* mnt_free_list_get_best_fit(Mnt_Free_List* self, size_t size) {
     size_t i_result = 0;
 
     for (size_t i = 0; i < self->end; i++) {
-        printf("freelist[%d] = %d, %X\n", i, self->list[i].size, self->list[i].pos);
+        mnt_log(MNT_INFO, "freelist[%d] = %d, %X\n", i, self->list[i].size, self->list[i].pos);
         if (self->list[i].size >= size) {
             i_result = i;
             result = self->list[i].pos;

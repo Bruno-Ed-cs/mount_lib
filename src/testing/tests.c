@@ -7,9 +7,10 @@
 #include "../arenas.h"
 #include "../logging.h"
 
-bool create_array() {
+bool create_array(Mnt_Arena temp_arena) {
 
     float* temps = mnt_array_make(float, 10, NULL);
+    float* other_temps = mnt_array_make(float, 10, &temp_arena);
 
     if (temps == NULL)
         return false;
@@ -208,11 +209,13 @@ int main(int argc, char** argv) {
 
     time_t now = time(NULL);
 
+    Mnt_Arena arena = mnt_static_arena_make(mnt_mb(1), NULL);
+
     fprintf(log, "\nTests Mount lib:\n%s\n"
             "---------------------------------------------------------------------\n",
             ctime(&now));
 
-    fprintf(log, "Create array test:\n\t%s\n", passed(create_array()));
+    fprintf(log, "Create array test:\n\t%s\n", passed(create_array(arena)));
 
     fprintf(log, "Modify array test:\n\t%s\n", passed(modify_array()));
 

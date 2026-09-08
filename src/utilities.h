@@ -22,6 +22,18 @@ inline static void mnt_util_print_mem(byte* begin, unsigned long size) {
 
 };
 
+inline static size_t mnt_mb(size_t amount) {
+    return (1024 * 2) * amount;
+}
+
+inline static size_t mnt_kb(size_t amount) {
+    return 1024 * amount;
+}
+
+inline static size_t mnt_gb(size_t amount) {
+    return (1024 * 3) * amount;
+}
+
 inline static uintptr_t mnt_resolve_alingment(uintptr_t ptr) {
 
 

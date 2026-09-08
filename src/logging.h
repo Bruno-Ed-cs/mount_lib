@@ -7,7 +7,8 @@ typedef enum {
     MNT_INFO = 0,
     MNT_DEBUG,
     MNT_ERROR, 
-    MNT_FATAL
+    MNT_FATAL,
+    MNT_NONE
 
 } Mnt_Log_Level;
 

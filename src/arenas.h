@@ -86,7 +86,7 @@ void mnt_arena_delete(Mnt_Arena arena);
 int mnt_arena_free_all(Mnt_Arena* arena);
 void* mnt_arena_alloc(size_t size, Mnt_Arena* arena);
 void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena);
-int mnt_arena_free(void* mem_block, Mnt_Arena* arena);
+void mnt_arena_free(void* mem_block, Mnt_Arena* arena);
 
 //H_MOUNT_ARENAS
 #endif 

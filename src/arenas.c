@@ -8,6 +8,12 @@ void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena) {
 
     void* allocated = NULL;
 
+    if (arena == NULL) {
+        allocated = realloc(mem_begin, new_size);
+        return allocated;
+
+    }
+
     switch (arena->type) {
         case MNT_PAGED_ARENA:
             //TODO: Implement the paged arena
@@ -20,6 +26,7 @@ void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena) {
 
         break;
 
+
     }
 
     return allocated;
@@ -28,6 +35,12 @@ void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena) {
 void* mnt_arena_alloc(size_t size, Mnt_Arena* arena) {
 
     void* allocated = NULL;
+
+    if (arena == NULL) {
+        allocated = malloc(size);
+        return allocated;
+
+    }
 
     switch (arena->type) {
         case MNT_PAGED_ARENA:
@@ -50,6 +63,11 @@ int mnt_arena_free_all(Mnt_Arena* arena) {
 
     int allocated_bytes = 0;
 
+    if (arena == NULL) {
+        return allocated_bytes;
+
+    }
+
     switch (arena->type) {
         case MNT_PAGED_ARENA:
             //TODO: Implement the paged arena
@@ -65,6 +83,31 @@ int mnt_arena_free_all(Mnt_Arena* arena) {
     }
 
     return allocated_bytes;
+}
+
+void mnt_arena_free(void* mem_block, Mnt_Arena* arena) {
+
+
+    if (arena == NULL) {
+        free(mem_block);
+        return;
+    }
+
+    switch (arena->type) {
+        case MNT_PAGED_ARENA:
+            //TODO: Implement the paged arena
+
+        break;
+
+        case MNT_STATIC_ARENA:
+
+
+        break;
+
+    }
+
+    return;
+
 }
 
 Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer) {

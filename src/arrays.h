@@ -10,6 +10,7 @@ typedef struct {
 
     size_t data_size;
     size_t lenght;
+    Mnt_Arena* arena;
 
 } Mnt_Array_Header;
 
@@ -22,7 +23,7 @@ typedef struct {
 } Mnt_Array_Iterator;
 
 Mnt_Array_Header* mnt_array_header(void* array);
-void* mnt_array_make_canonical(size_t data_size, size_t n);
+void* mnt_array_make_canonical(size_t data_size, size_t n, Mnt_Arena* arena);
 void* mnt_array_realloc(void* array, size_t new_size);
 void* mnt_array_clone(void* array);
 void mnt_array_free(void* array);
@@ -30,7 +31,7 @@ void mnt_array_free(void* array);
 Mnt_Array_Iterator mnt_array_get_iterator(void* array);
 bool mnt_array_iterate(Mnt_Array_Iterator* iter);
 
-#define mnt_array_make(type, size) mnt_array_make_canonical(sizeof(type), size)
+#define mnt_array_make(type, size, arena) mnt_array_make_canonical(sizeof(type), (size), (arena))
 #define mnt_array_len(array) mnt_array_header((array))->lenght
 #define mnt_array_data_size(array) mnt_array_header((array))->data_size
 

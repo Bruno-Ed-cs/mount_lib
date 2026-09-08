@@ -1,15 +1,18 @@
 #include "arrays.h"
+#include "arenas.h"
 #include <stdlib.h>
 #include <string.h>
 
-void* mnt_array_make_canonical(size_t data_size, size_t n) {
+void* mnt_array_make_canonical(size_t data_size, size_t n, Mnt_Arena* arena) {
 
     Mnt_Array_Header header = {
         .lenght = n,
-        .data_size = data_size
+        .data_size = data_size,
+        .arena = arena
+        
     };
 
-    Mnt_Array_Header* array = malloc(sizeof(Mnt_Array_Header) + (header.data_size * n));
+    Mnt_Array_Header* array = mnt_arena_alloc(sizeof(Mnt_Array_Header) + (header.data_size * n), arena);
     array[0] = header;
     byte* first_element = (void*)((byte*)array + sizeof(Mnt_Array_Header));
 
@@ -29,7 +32,7 @@ inline Mnt_Array_Header* mnt_array_header(void* array) {
 void* mnt_array_realloc(void* array, size_t new_size) {
 
     Mnt_Array_Header* head = mnt_array_header(array);
-    void* new_array = realloc(head, new_size * head->data_size + sizeof(Mnt_Array_Header));
+    void* new_array = mnt_arena_realloc(head, new_size * head->data_size + sizeof(Mnt_Array_Header), head->arena);
 
     return new_array;
 
@@ -38,7 +41,7 @@ void* mnt_array_realloc(void* array, size_t new_size) {
 void* mnt_array_clone(void* array) {
 
     Mnt_Array_Header* header = mnt_array_header(array);
-    void* new_array = mnt_array_make_canonical(header->data_size, header->lenght);
+    void* new_array = mnt_array_make_canonical(header->data_size, header->lenght, header->arena);
 
     size_t size = header->data_size * header->lenght + sizeof(Mnt_Array_Header);
 
@@ -51,7 +54,7 @@ void mnt_array_free(void* array) {
 
     Mnt_Array_Header* head = mnt_array_header(array);
 
-    free(head);
+    mnt_arena_free(head, head->arena);
 }
 
 Mnt_Array_Iterator mnt_array_get_iterator(void* array) {

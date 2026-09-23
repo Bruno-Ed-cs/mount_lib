@@ -12,7 +12,7 @@ typedef uint8_t byte;
 
 inline static void mnt_util_print_mem(byte* begin, unsigned long size) {
 
-    printf("Memory block at Ox%08X of length: %lu:\n", begin, size);
+    printf("Memory block at Ox%p of length: %lu:\n", begin, size);
     puts("--------------------------------------------------------------------------");
     for (size_t i = 0; i < size; i++) {
         if (i % 10 == 0) {

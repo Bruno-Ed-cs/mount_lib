@@ -57,7 +57,3 @@ bool mnt_array_iterate(Mnt_Array_Iterator* iter);
 //H_MOUNT_ARRAYS
 #endif
 
-#ifdef MOUNT_ARRAYS_IMPLEMENTATION
-
-//DMOUNT_ARRAYS_IMPLEMENTATION
-#endif

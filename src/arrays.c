@@ -1,5 +1,6 @@
 #include "arrays.h"
 #include "arenas.h"
+#include "logging.h"
 
 void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* arena) {
 
@@ -13,12 +14,20 @@ void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* aren
     Mnt_Array_Header* array = NULL;
 
     if (arena) {
+
         array = mnt_arena_alloc(sizeof(Mnt_Array_Header) + (header.data_size * n), arena);
+
     } else {
 
         array = malloc(sizeof(Mnt_Array_Header) + (header.data_size * n));
-
     }
+
+    if (!array) {
+
+        mnt_log(MNT_ERROR, "Failure allocating array");
+        return array;
+    }
+
     array[0] = header;
     byte* first_element = (void*)((byte*)array + sizeof(Mnt_Array_Header));
 

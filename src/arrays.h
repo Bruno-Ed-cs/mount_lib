@@ -39,13 +39,15 @@ typedef struct {
 
 } Mnt_Array_Iterator;
 
+void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* arena);
+
 Mnt_Array_Header* mnt_array_header(void* array);
-void* mnt_array_make_canonical(size_t data_size, size_t n, Mnt_Arena* arena);
 void* mnt_array_realloc(void* array, size_t new_size);
 void* mnt_array_clone(void* array);
 void mnt_array_free(void* array);
 
-#define mnt_array_make(type, size, arena) mnt_array_make_canonical(sizeof(type), (size), (arena))
+//if the arena is null the array is allocated with malloc
+#define mnt_array_make(type, size, arena) _mnt_array_make_implementation(sizeof(type), (size), (arena))
 #define mnt_array_len(array) mnt_array_header((array))->lenght
 
 Mnt_Array_Iterator mnt_array_get_iterator(void* array);

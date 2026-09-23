@@ -1,6 +1,4 @@
 #include "logging.h"
-#include <stdarg.h>
-#include <unistd.h>
 
 Mnt_Log_Level min_logging = MNT_INFO;
 FILE* log_output = NULL;

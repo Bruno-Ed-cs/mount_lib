@@ -1,9 +1,16 @@
 #ifndef H_MOUNT_ARENAS
 #define H_MOUNT_ARENAS
 
-#include <stdlib.h>
-#include <stdbool.h>
+#ifndef MNT_DONT_INCLUDE
+
 #include "utilities.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#endif
 
 #define MNT_MAX_FREE_LIST 10
 #define MNT_ALLOC_KEY 0x690731F3
@@ -52,7 +59,7 @@ typedef struct {
     byte* buffer;
     byte* pos;
     size_t size;
-    Mnt_Free_List reallocations;
+    Mnt_Free_List free_list;
 
 } Mnt_Static_Arena;
 
@@ -77,16 +84,17 @@ typedef struct {
 
 } Mnt_Arena;
 
+//static arena functions
 Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer);
 void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena);
 int mnt_static_arena_reset(Mnt_Static_Arena* arena);
 void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Arena* arena);
 
+//Arena interfaces
 void mnt_arena_delete(Mnt_Arena arena);
 int mnt_arena_free_all(Mnt_Arena* arena);
 void* mnt_arena_alloc(size_t size, Mnt_Arena* arena);
 void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena);
-void mnt_arena_free(void* mem_block, Mnt_Arena* arena);
 
 //H_MOUNT_ARENAS
 #endif 

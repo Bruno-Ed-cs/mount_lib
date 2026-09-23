@@ -1,16 +1,13 @@
 #include "arenas.h"
 #include "logging.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
 
 void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena) {
 
     void* allocated = NULL;
 
     if (arena == NULL) {
-        allocated = realloc(mem_begin, new_size);
-        return allocated;
+        mnt_log(MNT_ERROR, "No arena provided");
+        return NULL;
 
     }
 
@@ -37,9 +34,8 @@ void* mnt_arena_alloc(size_t size, Mnt_Arena* arena) {
     void* allocated = NULL;
 
     if (arena == NULL) {
-        allocated = malloc(size);
-        return allocated;
-
+        mnt_log(MNT_ERROR, "No arena provided");
+        return NULL;
     }
 
     switch (arena->type) {
@@ -64,8 +60,8 @@ int mnt_arena_free_all(Mnt_Arena* arena) {
     int allocated_bytes = 0;
 
     if (arena == NULL) {
-        return allocated_bytes;
-
+        mnt_log(MNT_ERROR, "No arena provided");
+        return 0;
     }
 
     switch (arena->type) {
@@ -85,30 +81,6 @@ int mnt_arena_free_all(Mnt_Arena* arena) {
     return allocated_bytes;
 }
 
-void mnt_arena_free(void* mem_block, Mnt_Arena* arena) {
-
-
-    if (arena == NULL) {
-        free(mem_block);
-        return;
-    }
-
-    switch (arena->type) {
-        case MNT_PAGED_ARENA:
-            //TODO: Implement the paged arena
-
-        break;
-
-        case MNT_STATIC_ARENA:
-
-
-        break;
-
-    }
-
-    return;
-
-}
 
 Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer) {
 
@@ -126,7 +98,7 @@ Mnt_Arena mnt_static_arena_make(size_t size, char* backing_buffer) {
     arena.pos = arena.buffer;
     arena.size = size;
 
-    mnt_free_list_reset(&arena.reallocations);
+    mnt_free_list_reset(&arena.free_list);
 
     return (Mnt_Arena) {
         .static_arena = arena,
@@ -160,15 +132,15 @@ void* mnt_static_arena_alloc(size_t size, Mnt_Static_Arena* arena) {
 
     //Verify if it all fits
 
-    byte* result = mnt_free_list_get_best_fit(&arena->reallocations, true_size);
+    byte* result = mnt_free_list_get_best_fit(&arena->free_list, true_size);
     // printf("Result: %d\n", result);
 
     if (result != NULL) {
 
         byte* aling_result = (byte*)mnt_resolve_alingment((uintptr_t)result);
 
-        if ((size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->reallocations, result)) {
-            mnt_free_list_update(&arena->reallocations, result, true_size + (result - aling_result));
+        if ((size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->free_list, result)) {
+            mnt_free_list_update(&arena->free_list, result, true_size + (result - aling_result));
 
             Mnt_Allocation_Header* head = (Mnt_Allocation_Header*)result;
             head->size = size;
@@ -206,7 +178,7 @@ int mnt_static_arena_reset(Mnt_Static_Arena* arena) {
     byte* cur = arena->pos;
     int delta = (int)(cur - (byte*)arena->pos);
     arena->pos = arena->buffer;
-    mnt_free_list_reset(&arena->reallocations);
+    mnt_free_list_reset(&arena->free_list);
 
     return delta;
 }
@@ -235,12 +207,12 @@ void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Aren
 
     size_t true_size = new_size + sizeof(Mnt_Allocation_Header);
 
-    byte* pos = mnt_free_list_get_best_fit(&arena->reallocations, true_size);
+    byte* pos = mnt_free_list_get_best_fit(&arena->free_list, true_size);
     uintptr_t aling_result = mnt_resolve_alingment((uintptr_t)pos);
 
-    if (pos != NULL && (size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->reallocations, pos)) {
+    if (pos != NULL && (size_t)(aling_result + true_size) <= mnt_free_list_find(&arena->free_list, pos)) {
 
-        mnt_free_list_update(&arena->reallocations, pos, true_size + ((uintptr_t) pos - aling_result));
+        mnt_free_list_update(&arena->free_list, pos, true_size + ((uintptr_t) pos - aling_result));
 
         Mnt_Allocation_Header* new_header = (Mnt_Allocation_Header*)(aling_result);
         new_header->size = new_size;
@@ -255,7 +227,7 @@ void* mnt_static_arena_realloc(void* mem_begin, size_t new_size, Mnt_Static_Aren
         pos = mnt_static_arena_alloc(new_size, arena);
 
         if (pos != NULL) {
-            mnt_free_list_add(&arena->reallocations, (byte*)head, head->size + sizeof(Mnt_Allocation_Header));
+            mnt_free_list_add(&arena->free_list, (byte*)head, head->size + sizeof(Mnt_Allocation_Header));
             memcpy(pos, mem_begin, head->size);
             memset(head, 0, head->size + sizeof(Mnt_Allocation_Header));
         }

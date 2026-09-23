@@ -1,10 +1,14 @@
 #ifndef H_MOUNT_UTILITIES
 #define H_MOUNT_UTILITIES
 
+#ifndef MNT_DONT_INCLUDE
+
 #include <stdio.h>
 #include <stdint.h>
 
-typedef unsigned char byte;
+#endif
+
+typedef uint8_t byte;
 
 inline static void mnt_util_print_mem(byte* begin, unsigned long size) {
 

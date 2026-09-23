@@ -1,6 +1,13 @@
 #ifndef H_MOUNT_LOGGING
 #define H_MOUNT_LOGGING
+
+#ifndef MNT_DONT_INCLUDE
+
 #include <stdio.h>
+#include <stdarg.h>
+#include <unistd.h>
+
+#endif
 
 typedef enum {
 

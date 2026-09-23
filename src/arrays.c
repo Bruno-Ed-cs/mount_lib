@@ -1,7 +1,5 @@
 #include "arrays.h"
 #include "arenas.h"
-#include <stdlib.h>
-#include <string.h>
 
 void* mnt_array_make_canonical(size_t data_size, size_t n, Mnt_Arena* arena) {
 
@@ -54,7 +52,9 @@ void mnt_array_free(void* array) {
 
     Mnt_Array_Header* head = mnt_array_header(array);
 
-    mnt_arena_free(head, head->arena);
+    if (head->arena == NULL){
+        free(head);
+    }
 }
 
 Mnt_Array_Iterator mnt_array_get_iterator(void* array) {

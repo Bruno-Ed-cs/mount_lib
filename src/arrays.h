@@ -26,10 +26,9 @@ typedef struct {
     size_t data_size;
     size_t lenght;
     size_t capacity;
-    Mnt_Arena* arena;
     byte data[];
 
-} Mnt_Darray_Header;
+} Mnt_Darray;
 
 typedef struct {
 
@@ -39,6 +38,24 @@ typedef struct {
 
 } Mnt_Array_Iterator;
 
+//dynamic array
+Mnt_Darray* mnt_darray_make(size_t data_size, size_t n);
+void _mnt_darray_grow(Mnt_Darray* self, size_t addition);
+void _mnt_darray_reduce(Mnt_Darray* self, size_t subtraction);
+void mnt_darray_free(Mnt_Darray* self);
+void mnt_darray_reserve(Mnt_Darray* self, size_t size);
+void mnt_darray_shrink(Mnt_Darray* self);
+
+bool mnt_darray_append(Mnt_Darray* self, void* src);
+bool mnt_darray_insert(Mnt_Darray* self, void* src, size_t index);
+bool mnt_darray_pop(Mnt_Darray* self, void* dest);
+bool mnt_darray_pop_front(Mnt_Darray* self, void* dest);
+bool mnt_darray_remove(Mnt_Darray* self, size_t index);
+
+void mnt_darray_get(Mnt_Darray* self, void* dest, size_t index);
+void mnt_darray_set(Mnt_Darray* self, void* src, size_t index);
+
+//static array
 void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* arena);
 
 Mnt_Array_Header* mnt_array_header(void* array);

@@ -184,6 +184,292 @@ bool static_arena_tests() {
     return true;
 }
 
+typedef Mnt_Darray Mnt_Darray_float;
+
+bool dynamic_array() {
+
+    //append tests
+    Mnt_Darray_float* temps = mnt_darray_make(float, 0);
+
+    float unit[] = {443.2, 10.0, 84.3, 99.2};
+
+    for (int i = 0; i < sizeof(unit)/sizeof(*unit); i++) {
+
+        mnt_darray_append(temps, &unit[i]);
+    }
+
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        mnt_log(MNT_INFO, "%.2f, ", holder);
+
+        if (unit[i] != holder) {
+            mnt_log(MNT_ERROR, "The data does not match in the array");
+            return false;
+
+        }
+
+    }
+
+    //copy tests
+    Mnt_Darray_float* temps_clone = mnt_darray_clone(temps);
+
+    if (temps_clone->data == temps->data) {
+
+        mnt_log(MNT_ERROR, "Failed copy");
+        return false;
+    }
+
+    for (int i = 0; i < temps_clone->lenght; i++) {
+
+        float original; mnt_darray_get(temps, &original, i);
+        float clone; mnt_darray_get(temps, &clone, i);
+
+        if (clone != original) {
+            return false;
+        }
+
+        mnt_log(MNT_INFO, "original[%d] = %.2f, clone[%d] = %.2f", i, original, i, clone);
+
+    }
+
+    //pop tests
+    float expected[] = {443.2, 10.0, 84.3};
+    float poped = 69;
+    float comp = 99.2;
+    mnt_darray_pop(temps, &poped);
+
+    if (poped != comp) {
+        mnt_log(MNT_ERROR, "invalid pop,\nexpected = 99.2\ngot = %.2f", poped);
+
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected[i] != holder) {
+
+            mnt_log(MNT_ERROR, "invalid comparisson");
+
+            return false;
+
+        }
+
+    }
+
+    //insert tests
+    float insert_val = 55.5;
+    mnt_darray_insert(temps, &insert_val, 1);
+
+    float expected_insert[] = {443.2, 55.5, 10.0, 84.3};
+
+    if (temps->lenght != sizeof(expected_insert)/sizeof(*expected_insert)) {
+        mnt_log(MNT_ERROR, "invalid lenght after insert,\nexpected = %d\ngot = %d",
+                (int)(sizeof(expected_insert)/sizeof(*expected_insert)), (int)temps->lenght);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_insert[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid insert at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_insert[i], holder);
+            return false;
+        }
+    }
+
+    //insert at end tests
+    float insert_end_val = 7.7;
+    mnt_darray_insert(temps, &insert_end_val, temps->lenght);
+
+    float expected_insert_end[] = {443.2, 55.5, 10.0, 84.3, 7.7};
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_insert_end[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid insert at end, index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_insert_end[i], holder);
+            return false;
+        }
+    }
+
+    //set tests
+    float set_val = 3.3;
+    mnt_darray_set(temps, &set_val, 2);
+
+    float expected_set[] = {443.2, 55.5, 3.3, 84.3, 7.7};
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_set[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid set at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_set[i], holder);
+            return false;
+        }
+    }
+
+    //pop_front tests
+    float poped_front = 69;
+    comp = 443.2;
+    mnt_darray_pop_front(temps, &poped_front);
+
+    if (poped_front != comp) {
+        mnt_log(MNT_ERROR, "invalid pop_front,\nexpected = 443.20\ngot = %.2f", poped_front);
+        return false;
+    }
+
+    float expected_pop_front[] = {55.5, 3.3, 84.3, 7.7};
+
+    if (temps->lenght != sizeof(expected_pop_front)/sizeof(*expected_pop_front)) {
+        mnt_log(MNT_ERROR, "invalid lenght after pop_front,\nexpected = %d\ngot = %d",
+                (int)(sizeof(expected_pop_front)/sizeof(*expected_pop_front)), (int)temps->lenght);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_pop_front[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid pop_front, index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_pop_front[i], holder);
+            return false;
+        }
+    }
+
+    //remove tests
+    mnt_darray_remove(temps, 1);
+
+    float expected_remove[] = {55.5, 84.3, 7.7};
+
+    if (temps->lenght != sizeof(expected_remove)/sizeof(*expected_remove)) {
+        mnt_log(MNT_ERROR, "invalid lenght after remove,\nexpected = %d\ngot = %d",
+                (int)(sizeof(expected_remove)/sizeof(*expected_remove)), (int)temps->lenght);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_remove[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid remove at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_remove[i], holder);
+            return false;
+        }
+    }
+
+    //reserve tests
+    size_t cap_before = temps->capacity;
+    mnt_darray_reserve(temps, 128);
+
+    if (temps->capacity < 128) {
+        mnt_log(MNT_ERROR, "reserve failed to grow capacity,\nexpected >= 128\ngot = %d",
+                (int)temps->capacity);
+        return false;
+    }
+
+    if (temps->lenght != sizeof(expected_remove)/sizeof(*expected_remove)) {
+        mnt_log(MNT_ERROR, "reserve altered lenght,\nexpected = %d\ngot = %d",
+                (int)(sizeof(expected_remove)/sizeof(*expected_remove)), (int)temps->lenght);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_remove[i] != holder) {
+            mnt_log(MNT_ERROR, "reserve corrupted data at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_remove[i], holder);
+            return false;
+        }
+    }
+
+    mnt_log(MNT_INFO, "capacity before reserve = %d, after = %d",
+            (int)cap_before, (int)temps->capacity);
+
+    //shrink tests
+    mnt_darray_shrink(temps);
+
+    if (temps->capacity != temps->lenght) {
+        mnt_log(MNT_ERROR, "shrink did not match capacity to lenght,\nlenght = %d\ncapacity = %d",
+                (int)temps->lenght, (int)temps->capacity);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_remove[i] != holder) {
+            mnt_log(MNT_ERROR, "shrink corrupted data at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_remove[i], holder);
+            return false;
+        }
+    }
+
+    //append after shrink tests
+    float post_shrink = 1.1;
+    mnt_darray_append(temps, &post_shrink);
+
+    float expected_post_shrink[] = {55.5, 84.3, 7.7, 1.1};
+
+    if (temps->lenght != sizeof(expected_post_shrink)/sizeof(*expected_post_shrink)) {
+        mnt_log(MNT_ERROR, "invalid lenght after post shrink append,\nexpected = %d\ngot = %d",
+                (int)(sizeof(expected_post_shrink)/sizeof(*expected_post_shrink)), (int)temps->lenght);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_post_shrink[i] != holder) {
+            mnt_log(MNT_ERROR, "invalid post shrink append at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_post_shrink[i], holder);
+            return false;
+        }
+    }
+
+    //grow tests
+    size_t grow_cap = temps->capacity;
+    _mnt_darray_grow(temps, 32);
+
+    if (temps->capacity < grow_cap + 32) {
+        mnt_log(MNT_ERROR, "grow failed,\nexpected >= %d\ngot = %d",
+                (int)(grow_cap + 32), (int)temps->capacity);
+        return false;
+    }
+
+    for (int i = 0; i < temps->lenght; i++) {
+
+        float holder; mnt_darray_get(temps, &holder, i);
+
+        if (expected_post_shrink[i] != holder) {
+            mnt_log(MNT_ERROR, "grow corrupted data at index %d,\nexpected = %.2f\ngot = %.2f",
+                    i, expected_post_shrink[i], holder);
+            return false;
+        }
+    }
+
+    mnt_darray_free(temps);
+    mnt_darray_free(temps_clone);
+
+    return true;
+
+}
+
 inline static char* passed(bool test_result) {
     if (test_result)
         return "PASSED";
@@ -224,6 +510,8 @@ int main(int argc, char** argv) {
     fprintf(log, "Iterate array test:\n\t%s\n", passed(iterate_array()));
 
     fprintf(log, "Static Arenas test:\n\t%s\n", passed(static_arena_tests()));
+
+    fprintf(log, "Dynamic arrays test:\n\t%s\n", passed(dynamic_array()));
 
     return 0;
 

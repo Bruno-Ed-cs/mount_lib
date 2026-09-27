@@ -186,6 +186,7 @@ void* mnt_arena_realloc(void* mem_begin, size_t new_size, Mnt_Arena* arena);
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #endif
 
@@ -203,10 +204,9 @@ typedef struct {
     size_t data_size;
     size_t lenght;
     size_t capacity;
-    Mnt_Arena* arena;
-    byte data[];
+    byte* data;
 
-} Mnt_Darray_Header;
+} Mnt_Darray;
 
 typedef struct {
 
@@ -216,7 +216,33 @@ typedef struct {
 
 } Mnt_Array_Iterator;
 
-void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* arena);
+//dynamic array
+#define MNT_DARRAY_DEFAULT_CAPACITY 50
+
+#define mnt_darray_make(type, init_capacity) _mnt_darray_make(sizeof(type), (init_capacity))
+Mnt_Darray* _mnt_darray_make(size_t data_size, size_t init_capacity);
+Mnt_Darray* mnt_darray_clone(Mnt_Darray* self);
+
+void _mnt_darray_grow(Mnt_Darray* self, size_t addition);
+void _mnt_darray_reduce(Mnt_Darray* self, size_t subtraction);
+void mnt_darray_free(Mnt_Darray* self);
+void mnt_darray_reserve(Mnt_Darray* self, size_t size);
+void mnt_darray_shrink(Mnt_Darray* self);
+
+void mnt_darray_append(Mnt_Darray* self, void* src);
+void mnt_darray_insert(Mnt_Darray* self, void* src, size_t index);
+void mnt_darray_pop(Mnt_Darray* self, void* dest);
+void mnt_darray_pop_front(Mnt_Darray* self, void* dest);
+void mnt_darray_remove(Mnt_Darray* self, size_t index);
+
+void mnt_darray_get(Mnt_Darray* self, void* dest, size_t index);
+void mnt_darray_set(Mnt_Darray* self, void* src, size_t index);
+
+//static array
+
+#define mnt_array_make(type, size, arena) _mnt_array_make(sizeof(type), (size), (arena))
+#define mnt_array_len(array) mnt_array_header((array))->lenght
+void* _mnt_array_make(size_t data_size, size_t n, Mnt_Arena* arena);
 
 Mnt_Array_Header* mnt_array_header(void* array);
 void* mnt_array_realloc(void* array, size_t new_size);
@@ -224,8 +250,6 @@ void* mnt_array_clone(void* array);
 void mnt_array_free(void* array);
 
 //if the arena is null the array is allocated with malloc
-#define mnt_array_make(type, size, arena) _mnt_array_make_implementation(sizeof(type), (size), (arena))
-#define mnt_array_len(array) mnt_array_header((array))->lenght
 
 Mnt_Array_Iterator mnt_array_get_iterator(void* array);
 bool mnt_array_iterate(Mnt_Array_Iterator* iter);
@@ -373,12 +397,9 @@ void mnt_set_log_output(FILE* output) {
 
 }
 
-// arrays.c
-// #include "arrays.h"
-// #include "arenas.h"
-// #include "logging.h"
+//arrays.c
 
-void* _mnt_array_make_implementation(size_t data_size, size_t n, Mnt_Arena* arena) {
+void* _mnt_array_make(size_t data_size, size_t n, Mnt_Arena* arena) {
 
     Mnt_Array_Header header = {
         .lenght = n,
@@ -432,7 +453,7 @@ void* mnt_array_realloc(void* array, size_t new_size) {
 void* mnt_array_clone(void* array) {
 
     Mnt_Array_Header* header = mnt_array_header(array);
-    void* new_array = _mnt_array_make_implementation(header->data_size, header->lenght, header->arena);
+    void* new_array = _mnt_array_make(header->data_size, header->lenght, header->arena);
 
     size_t size = header->data_size * header->lenght + sizeof(Mnt_Array_Header);
 
@@ -479,6 +500,163 @@ bool mnt_array_iterate(Mnt_Array_Iterator* iter) {
     return true;
 
 }
+
+Mnt_Darray* _mnt_darray_make(size_t data_size, size_t init_capacity) {
+
+    Mnt_Darray* array = malloc(sizeof (Mnt_Darray));
+    *array = (Mnt_Darray){
+        .data_size = data_size,
+        .capacity = init_capacity == 0 ? MNT_DARRAY_DEFAULT_CAPACITY : init_capacity,
+        .lenght = 0
+    };
+
+    array->data = calloc(array->capacity, array->data_size);
+    
+    return array;
+}
+
+void _mnt_darray_grow(Mnt_Darray* self, size_t addition) {
+
+    self->data = reallocarray(self->data, self->data_size, self->capacity + addition);
+    self->capacity += addition;
+
+
+    memset(&self->data[self->lenght * self->data_size], 0, (self->capacity - self->lenght) * self->data_size);
+}
+
+
+void mnt_darray_free(Mnt_Darray* self) {
+
+    free(self->data);
+    free(self);
+
+}
+
+void mnt_darray_reserve(Mnt_Darray* self, size_t size) {
+
+    _mnt_darray_grow(self, size);
+
+}
+
+void mnt_darray_shrink(Mnt_Darray* self) {
+
+    size_t reduction = self->capacity - self->lenght;
+
+    if (reduction == 0){
+        return;
+    }
+
+    byte* old = self->data;
+    self->data = malloc(self->data_size * self->lenght);
+
+    memcpy(self->data, old, self->lenght * self->data_size);
+
+    self->capacity = self->lenght;
+
+    free(old);
+
+}
+
+void mnt_darray_append(Mnt_Darray* self, void* src) {
+
+    if (self->capacity <= self->lenght) {
+
+        _mnt_darray_grow(self, self->capacity * 0.5);
+    }
+
+    memcpy(&self->data[self->data_size * self->lenght], src, self->data_size);
+    self->lenght++;
+
+}
+
+void mnt_darray_insert(Mnt_Darray* self, void* src, size_t index) {
+
+    assert(index <= self->lenght && "Invalid index");
+    if (self->capacity <= self->lenght) {
+
+        _mnt_darray_grow(self, self->capacity * 0.5);
+    }
+
+    self->lenght++;
+    memmove(&self->data[(index + 1) * self->data_size], &self->data[index * self->data_size], (self->lenght - index) * self->data_size);
+
+    memcpy(&self->data[self->data_size * index], src, self->data_size);
+}
+
+void mnt_darray_pop(Mnt_Darray* self, void* dest) {
+
+    if (self->lenght == 0) {
+        return;
+    }
+
+
+    memcpy(dest, &self->data[(self->lenght - 1) * self->data_size], self->data_size);
+    self->lenght--;
+
+}
+
+void mnt_darray_pop_front(Mnt_Darray* self, void* dest) {
+    if (self->lenght == 0) {
+
+        return;
+    }
+
+
+    memcpy(dest, &self->data[0], self->data_size);
+
+
+    memmove(&self->data[0], &self->data[self->data_size], self->data_size * (self->lenght -1));
+
+    self->lenght--;
+}
+
+void mnt_darray_remove(Mnt_Darray* self, size_t index) {
+
+    assert(index < self->lenght && "Invalid index");
+
+    memmove(&self->data[index * self->data_size], &self->data[(index + 1) * self->data_size], ((self->lenght - index) -1) * self->data_size);
+
+    self->lenght--;
+
+}
+
+void mnt_darray_get(Mnt_Darray* self, void* dest, size_t index) {
+
+    assert(index < self->lenght && "Invalid index");
+
+    byte* target = &self->data[index * self->data_size];
+
+    memcpy(dest, target, self->data_size);
+
+    return;
+
+}
+
+void mnt_darray_set(Mnt_Darray* self, void* src, size_t index) {
+
+    assert(index < self->lenght && "Invalid index");
+
+    byte* dest = &self->data[index * self->data_size];
+
+    memcpy(dest, src, self->data_size);
+
+    return;
+
+}
+
+Mnt_Darray* mnt_darray_clone(Mnt_Darray* self) {
+
+    Mnt_Darray* array = malloc(sizeof(Mnt_Darray));
+    *array = *self;
+
+    array->data = malloc(array->data_size * array->capacity);
+
+    memcpy(array->data, self->data, self->data_size * self->capacity);
+
+    return array;
+}
+
+
 
 // void util_append_darray(void* darray, void* data) {
 //

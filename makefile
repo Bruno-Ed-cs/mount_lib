@@ -2,8 +2,8 @@ CC = gcc
 INCLUDE_PATH = -I./src/
 RELEASE_FLAGS = -O2 -fPIC -std=c11
 DEBUG_FLAGS = -O0 -ggdb 
-
 # -fsanitize=address
+
 LIB_SOURCES = $(filter-out src/testing/tests.c, $(wildcard src/*.c))
 OBJECTS = $(LIB_SOURCES:src/%.c=build/%.o)
 
